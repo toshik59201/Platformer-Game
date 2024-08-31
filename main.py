@@ -1,11 +1,11 @@
 import pygame
 import sys
 import pygame_menu
-import random
 from settings import *
 from world import World
-from enemy import Enemy  # Импортируем класс Enemy
-from player import Player  # Импортируем класс Player
+from enemy import Enemy
+from player import Player
+from clouds import CloudManager
 
 pygame.init()
 
@@ -26,59 +26,6 @@ def game_cursor():
     x, y = pygame.mouse.get_pos()
     screen.blit(cursor, (x-2, y-2))
 
-class Cloud:
-    def __init__(self, image, x, y, speed):
-        self.original_image = image
-        self.image = image.copy()
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.alpha = 0
-        self.image.set_alpha(self.alpha)
-
-    def move(self):
-        self.x += self.speed
-        if self.x > WIDTH:
-            return True
-        return False
-
-    def draw(self, screen):
-        if self.alpha < 255:
-            self.alpha += 1  # Increase transparency gradually
-            self.image.set_alpha(self.alpha)
-        screen.blit(self.image, (self.x, self.y))
-
-class CloudManager:
-    def __init__(self, screen, cloud_images, min_clouds=5, max_clouds=10):
-        self.screen = screen
-        self.cloud_images = cloud_images
-        self.min_clouds = min_clouds
-        self.max_clouds = max_clouds
-        self.clouds = []
-        self.cloud_timer = 0
-
-        for _ in range(self.min_clouds):
-            self.add_cloud()
-
-    def add_cloud(self):
-        cloud_image = random.choice(self.cloud_images)
-        x = random.randint(-cloud_image.get_width(), WIDTH)
-        y = random.randint(0, HEIGHT // 2)
-        speed = random.uniform(0.5, 2)
-        self.clouds.append(Cloud(cloud_image, x, y, speed))
-
-    def update(self):
-        self.cloud_timer += 1
-        if self.cloud_timer > 60:  # Adjust cloud generation frequency
-            if len(self.clouds) < self.max_clouds:
-                self.add_cloud()
-            self.cloud_timer = 0
-
-        for cloud in self.clouds[:]:
-            if cloud.move():
-                self.clouds.remove(cloud)
-            cloud.draw(self.screen)
-
 class GameMain:
     def __init__(self, screen, width, height):
         self.screen = screen
@@ -96,16 +43,27 @@ class GameMain:
         ]
         self.cloud_manager = CloudManager(self.screen, cloud_images)
 
-        # Создаем объект игрока
-        self.player = Player(pos=(50, 400))
-        self.last_width = width  # Сохраняем начальную ширину экрана
+        # Create player and enemy
+        self.player = Player(pos=(55, 400))
+        self.enemy = Enemy(pos=(90, 400))
+
+        # Add player and enemy to world
+        #self.world.add(self.player)
+        self.world.add(self.enemy)
+
+        self.last_width = width
+
+    def show_life(self, player):
+            # Отображение жизней игрока
+            life_text = self.font.render(f"Lives: {player.life}", True, (255, 255, 255))
+            self.screen.blit(life_text, (10, 10))  # Позиция на экране (10, 10)
 
     def update_bg_image(self, width, height):
         self.bg_img = pygame.transform.scale(pygame.image.load('assets/terrain/bg.png'), (width, height))
-        # Пропорционально обновляем позицию игрока
+        # Adjust player position proportional to screen width change
         scale_factor = width / self.last_width
         self.player.rect.x = int(self.player.rect.x * scale_factor)
-        self.last_width = width  # Обновляем текущую ширину экрана
+        self.last_width = width  # Update last_width to current width
 
     def main(self):
         while True:
@@ -129,15 +87,17 @@ class GameMain:
                 elif event.type == pygame.KEYUP:
                     self.player_event = False
 
-            self.screen.blit(self.bg_img, (0, 0))
-
             # Update and draw clouds
             self.cloud_manager.update()
 
             # Update player and enemy
             self.player.update(self.player_event)
+            self.enemy.update()
 
+            # Update and draw the world
             self.world.update(self.player_event)
+            self.world.draw(self.screen)
+            
             game_cursor()
             pygame.display.update()
             self.clock.tick(70)
@@ -152,7 +112,7 @@ def start_the_game():
 
 # Initialize the menu
 menu = pygame_menu.Menu('Welcome', 400, 300, theme=pygame_menu.themes.THEME_BLUE)
-menu.add.text_input('Name :', default='John Doe')
+menu.add.text_input('Nickname :', default='Тоши')
 menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
 menu.add.button('Play', start_the_game)
 menu.add.button('Quit', pygame_menu.events.EXIT)

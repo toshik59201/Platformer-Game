@@ -26,7 +26,7 @@ class Player(pygame.sprite.Sprite):
         self.on_left = False
         self.on_right = False
 
-    #получение всех изображений для создания анимации
+    # Получение всех изображений для создания анимации
     def _import_character_assets(self):
         character_path = "assets/player/"
         self.animations = {"idle": [], "walk": [],
@@ -35,10 +35,10 @@ class Player(pygame.sprite.Sprite):
             full_path = character_path + animation
             self.animations[animation] = import_sprite(full_path)
 
-    #анимация действий игрока
+    # Анимация действий игрока
     def _animate(self):
         animation = self.animations[self.status]
-        # loop over frame index
+        # Loop over frame index
         self.frame_index += self.animation_speed
         if self.frame_index >= len(animation):
             self.frame_index = 0
@@ -49,7 +49,7 @@ class Player(pygame.sprite.Sprite):
         else:
             flipped_image = pygame.transform.flip(image, True, False)
             self.image = flipped_image
-        # set the rect
+        # Set the rect
         if self.on_ground and self.on_right:
             self.rect = self.image.get_rect(bottomright = self.rect.bottomright)
         elif self.on_ground and self.on_left:
@@ -63,7 +63,7 @@ class Player(pygame.sprite.Sprite):
         elif self.on_ceiling:
             self.rect = self.image.get_rect(midtop = self.rect.midtop)
 
-    #проверка движений игрока влево или вправо, или не двигается
+    # Проверка движений игрока влево или вправо, или не двигается
     def _get_input(self, player_event):
         if player_event != False:
             if player_event == "right":
@@ -75,11 +75,11 @@ class Player(pygame.sprite.Sprite):
         else:
             self.direction.x = 0
 
-    #прыжок игрока
+    # Прыжок игрока
     def _jump(self):
         self.direction.y = self.jump_move
 
-    #определение действий игрока для проигрывания анимаций
+    # Определение действий игрока для проигрывания анимаций
     def _get_status(self):
         if self.direction.y < 0:
             self.status = "jump"
@@ -90,7 +90,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.status = "idle"
 
-    #обновление статуса игрока после взаимодействия с предметами
+    # Обновление статуса игрока после взаимодействия с предметами
     def update(self, player_event):
         self._get_status()
         if self.life > 0 and not self.game_over:
@@ -106,3 +106,6 @@ class Player(pygame.sprite.Sprite):
             self.status = "lose"
         self._animate()
 
+    # Отрисовка игрока
+    def draw(self, surface):
+        surface.blit(self.image, self.rect)

@@ -76,3 +76,6 @@ class Enemy(pygame.sprite.Sprite):
         self._patrol()
         self.rect.x += self.direction.x * self.speed
         self._animate()
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)

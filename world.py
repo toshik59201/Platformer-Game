@@ -5,9 +5,10 @@ from dirt import Dirt
 from trap import Trap
 from goal import Goal
 from player import Player
+from enemy import Enemy
 from game import Game
 
-#Класс отвечает за создание игрового мира, игровых объектов и управление ими, а также управляет взаимодействием игровых объектов с игроком
+
 class World:
     def __init__(self, world_data, screen):
         self.screen = screen
@@ -17,14 +18,25 @@ class World:
         self.current_x = 0
         self.gravity = 0.8
         self.game = Game(self.screen)
+        self.sprites = pygame.sprite.Group()  # Группа для всех спрайтов
 
-    #генерация частей мира (игрок, препятствия, цель, клетка)
+    def add(self, sprite):
+        """Добавление спрайта в группу спрайтов."""
+        self.sprites.add(sprite)
+
+    def draw(self, screen):
+        """Отрисовка всех спрайтов в мире."""
+        self.sprites.draw(screen)
+
+    # Генерация частей мира (игрок, препятствия, цель, клетка)
     def _setup_world(self, layout):
         self.tiles = pygame.sprite.Group()
         self.dirt = pygame.sprite.Group()
         self.traps = pygame.sprite.Group()
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
+        self.enemies = pygame.sprite.Group()  # Группа для врагов
+
         for row_index, row in enumerate(layout):
             for col_index, cell in enumerate(row):
                 x, y = col_index * tile_size, row_index * tile_size
@@ -33,7 +45,7 @@ class World:
                     self.tiles.add(tile)
                 elif cell == "D":
                     tile = Dirt((x, y), tile_size)
-                    self.dirt.add(tile) #В процессе
+                    self.dirt.add(tile)
                 elif cell == "t":
                     tile = Trap((x + (tile_size // 4), y + (tile_size // 4)), tile_size // 2)
                     self.traps.add(tile)
@@ -43,8 +55,11 @@ class World:
                 elif cell == "G":
                     goal_sprite = Goal((x, y), tile_size)
                     self.goal.add(goal_sprite)
+                elif cell == "E":  # Добавляем врагов
+                    enemy_sprite = Enemy((x, y))
+                    self.enemies.add(enemy_sprite)
+                    self.add(enemy_sprite)  # Добавляем врага в общий список спрайтов
 
-    #перемещение мира во время ходьбы игрока
     def _scroll_x(self):
         player = self.player.sprite
         player_x = player.rect.centerx
@@ -59,23 +74,19 @@ class World:
             self.world_shift = 0
             player.speed = 3
 
-    #гравитация для падения игрока
     def _apply_gravity(self, player):
         player.direction.y += self.gravity
         player.rect.y += player.direction.y
 
-    #обработка перемещений и столкновений игрока с объектами (по горизонтали)
     def _horizontal_movement_collision(self):
         player = self.player.sprite
         player.rect.x += player.direction.x * player.speed
         for sprite in self.tiles.sprites():
             if sprite.rect.colliderect(player.rect):
-                #проверка если игрок столкнулся с объектом слева
                 if player.direction.x < 0:
                     player.rect.left = sprite.rect.right
                     player.on_left = True
                     self.current_x = player.rect.left
-                #проверка если игрок столкнулся с объектом справа
                 elif player.direction.x > 0:
                     player.rect.right = sprite.rect.left
                     player.on_right = True
@@ -85,30 +96,25 @@ class World:
         if player.on_right and (player.rect.right > self.current_x or player.direction.x <= 0):
             player.on_right = False
 
-    #обработка перемещений и столкновений игрока с объектами (по вертикали)
     def _vertical_movement_collision(self):
         player = self.player.sprite
         self._apply_gravity(player)
         for sprite in self.tiles.sprites():
             if sprite.rect.colliderect(player.rect):
-                #проверка если игрок столкнулся с объектом снизу
                 if player.direction.y > 0:
                     player.rect.bottom = sprite.rect.top
                     player.direction.y = 0
                     player.on_ground = True
-                #проверка если игрок столкнулся с объектом сверху
                 elif player.direction.y < 0:
                     player.rect.top = sprite.rect.bottom
                     player.direction.y = 0
                     player.on_ceiling = True
         for sprite in self.dirt.sprites():
             if sprite.rect.colliderect(player.rect):
-                #проверка если игрок столкнулся с объектом снизу
                 if player.direction.y > 0:
                     player.rect.bottom = sprite.rect.top
                     player.direction.y = 0
                     player.on_ground = True
-                #проверка если игрок столкнулся с объектом сверху
                 elif player.direction.y < 0:
                     player.rect.top = sprite.rect.bottom
                     player.direction.y = 0
@@ -118,7 +124,6 @@ class World:
         if player.on_ceiling and player.direction.y > 0:
             player.on_ceiling = False
 
-    #обработка последствий, после взаимодействия игрока с ловушками
     def _handle_traps(self):
         player = self.player.sprite
         for sprite in self.traps.sprites():
@@ -129,28 +134,35 @@ class World:
                     player.rect.x -= tile_size
                 player.life -= 1
 
-    #обновление мира после взаимодействия игрока с объектами
     def update(self, player_event):
-        # for tile
+        # Обновляем все группы спрайтов
         self.tiles.update(self.world_shift)
-        self.tiles.draw(self.screen)
-        # for dirt
         self.dirt.update(self.world_shift)
-        self.dirt.draw(self.screen)
-        # for trap
         self.traps.update(self.world_shift)
-        self.traps.draw(self.screen)
-        # for goal
         self.goal.update(self.world_shift)
-        self.goal.draw(self.screen)
+        self.enemies.update()  # Обновляем врагов
+
+        # Обновляем игрока
+        self.player.update(player_event)
+        
+        # Обработка всех столкновений и гравитации
         self._scroll_x()
-        # for player
         self._horizontal_movement_collision()
         self._vertical_movement_collision()
-        self._handle_traps() #метод вызывается для обнаружения столкновений между игроком и объектами-ловушками и реагирования на них
-        # Он корректирует позицию игрока и применяет штрафы или повреждения по мере необходимости
-        self.player.update(player_event) #метод который обрабатывает движения игрока и анимацию на основе предоставленных входных данных
-        self.game.show_life(self.player.sprite) #вызывается для отображения оставшейся жизни или здоровья игрока на экране, используя спрайт игрока в качестве ссылки
-        self.player.draw(self.screen)
+        self._handle_traps()
+        
+        # Отображение состояния игры
+        self.game.show_life(self.player.sprite)
         self.game.game_state(self.player.sprite, self.goal.sprite)
+        
+        # Отрисовка всех групп спрайтов
+        self.tiles.draw(self.screen)
+        self.dirt.draw(self.screen)
+        self.traps.draw(self.screen)
+        self.goal.draw(self.screen)
+        
+        # Отрисовка игрока
+        self.player.draw(self.screen)
 
+        # Отрисовка врагов
+        self.enemies.draw(self.screen)
