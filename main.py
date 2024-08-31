@@ -79,14 +79,13 @@ class CloudManager:
                 self.clouds.remove(cloud)
             cloud.draw(self.screen)
 
-
 class GameMain:
     def __init__(self, screen, width, height):
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.player_event = False
         self.bg_img = pygame.image.load('assets/terrain/bg.png')
-        self.bg_img = pygame.transform.scale(self.bg_img, (WIDTH, HEIGHT))
+        self.bg_img = pygame.transform.scale(self.bg_img, (width, height))
         self.world = World(world_map, self.screen)
 
         # Load cloud images and create CloudManager
@@ -99,9 +98,14 @@ class GameMain:
 
         # Создаем объект игрока
         self.player = Player(pos=(50, 400))
+        self.last_width = width  # Сохраняем начальную ширину экрана
 
     def update_bg_image(self, width, height):
         self.bg_img = pygame.transform.scale(pygame.image.load('assets/terrain/bg.png'), (width, height))
+        # Пропорционально обновляем позицию игрока
+        scale_factor = width / self.last_width
+        self.player.rect.x = int(self.player.rect.x * scale_factor)
+        self.last_width = width  # Обновляем текущую ширину экрана
 
     def main(self):
         while True:
@@ -115,7 +119,6 @@ class GameMain:
                     width, height = event.size
                     self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
                     self.update_bg_image(width, height)
-                    self.world = World(world_map, self.screen)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_LEFT:
                         self.player_event = "left"
@@ -144,7 +147,7 @@ def set_difficulty(value, difficulty):
     pass  # Implement difficulty setting here
 
 def start_the_game():
-    game = GameMain(screen, WIDTH, HEIGHT)
+    game = GameMain(screen, 700, 500)
     game.main()
 
 # Initialize the menu
