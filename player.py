@@ -14,6 +14,7 @@ class Player(pygame.sprite.Sprite):
         # player movement
         self.direction = pygame.math.Vector2(0, 0)
         self.speed = 5
+        self.gravity = 0.8
         self.jump_move = -16
         # player status
         self.life = 5
@@ -26,22 +27,18 @@ class Player(pygame.sprite.Sprite):
         self.on_left = False
         self.on_right = False
 
-    # Получение всех изображений для создания анимации
     def _import_character_assets(self):
         character_path = "assets/player/"
-        self.animations = {"idle": [], "walk": [],
-            "jump": [], "fall": [], "lose": [], "win": []}
+        self.animations = {"idle": [], "walk": [], "jump": [], "fall": [], "lose": [], "win": [], "attack": []}
         for animation in self.animations.keys():
             full_path = character_path + animation
             self.animations[animation] = import_sprite(full_path)
 
-    # Анимация действий игрока
     def _animate(self):
         animation = self.animations[self.status]
-        # Loop over frame index
         self.frame_index += self.animation_speed
         if self.frame_index >= len(animation):
-            self.frame_index = 0
+            self.frame_index = 0 if self.status != "attack" else len(animation) - 1
         image = animation[int(self.frame_index)]
         image = pygame.transform.scale(image, (35, 50))
         if self.facing_right:
@@ -49,21 +46,8 @@ class Player(pygame.sprite.Sprite):
         else:
             flipped_image = pygame.transform.flip(image, True, False)
             self.image = flipped_image
-        # Set the rect
-        if self.on_ground and self.on_right:
-            self.rect = self.image.get_rect(bottomright = self.rect.bottomright)
-        elif self.on_ground and self.on_left:
-            self.rect = self.image.get_rect(bottomleft = self.rect.bottomleft)
-        elif self.on_ground:
-            self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
-        elif self.on_ceiling and self.on_right:
-            self.rect = self.image.get_rect(topright = self.rect.topright)
-        elif self.on_ceiling and self.on_left:
-            self.rect = self.image.get_rect(bottomleft = self.rect.topleft)
-        elif self.on_ceiling:
-            self.rect = self.image.get_rect(midtop = self.rect.midtop)
+        self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
 
-    # Проверка движений игрока влево или вправо, или не двигается
     def _get_input(self, player_event):
         if player_event != False:
             if player_event == "right":
@@ -72,15 +56,17 @@ class Player(pygame.sprite.Sprite):
             elif player_event == "left":
                 self.direction.x = -1
                 self.facing_right = False
+            elif player_event == "left_mouse":
+                self.status = "attack"
         else:
             self.direction.x = 0
 
-    # Прыжок игрока
     def _jump(self):
         self.direction.y = self.jump_move
 
-    # Определение действий игрока для проигрывания анимаций
     def _get_status(self):
+        if self.status == "attack" and self.frame_index < len(self.animations["attack"]) - 1:
+            return
         if self.direction.y < 0:
             self.status = "jump"
         elif self.direction.y > 1:
@@ -90,7 +76,6 @@ class Player(pygame.sprite.Sprite):
         else:
             self.status = "idle"
 
-    # Обновление статуса игрока после взаимодействия с предметами
     def update(self, player_event):
         self._get_status()
         if self.life > 0 and not self.game_over:
@@ -106,6 +91,6 @@ class Player(pygame.sprite.Sprite):
             self.status = "lose"
         self._animate()
 
-    # Отрисовка игрока
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
+    def draw(self, surface, offset):
+        """Draw player on screen with camera offset."""
+        surface.blit(self.image, (self.rect.x - offset.x, self.rect.y - offset.y))

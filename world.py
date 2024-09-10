@@ -21,11 +21,9 @@ class World:
         self.sprites = pygame.sprite.Group()  # Группа для всех спрайтов
 
     def add(self, sprite):
-        """Добавление спрайта в группу спрайтов."""
         self.sprites.add(sprite)
 
     def draw(self, screen):
-        """Отрисовка всех спрайтов в мире."""
         self.sprites.draw(screen)
 
     # Генерация частей мира (игрок, препятствия, цель, клетка)
@@ -35,7 +33,7 @@ class World:
         self.traps = pygame.sprite.Group()
         self.player = pygame.sprite.GroupSingle()
         self.goal = pygame.sprite.GroupSingle()
-        self.enemies = pygame.sprite.Group()  # Группа для врагов
+        self.enemies = pygame.sprite.Group()
 
         for row_index, row in enumerate(layout):
             for col_index, cell in enumerate(row):
@@ -47,18 +45,18 @@ class World:
                     tile = Dirt((x, y), tile_size)
                     self.dirt.add(tile)
                 elif cell == "t":
-                    tile = Trap((x + (tile_size // 4), y + (tile_size // 4)), tile_size // 2)
-                    self.traps.add(tile)
+                    trap = Trap((x + (tile_size // 4), y + (tile_size // 4)), tile_size // 2)
+                    self.traps.add(trap)
                 elif cell == "P":
                     player_sprite = Player((x, y))
                     self.player.add(player_sprite)
                 elif cell == "G":
                     goal_sprite = Goal((x, y), tile_size)
                     self.goal.add(goal_sprite)
-                elif cell == "E":  # Добавляем врагов
+                elif cell == "E":
                     enemy_sprite = Enemy((x, y))
                     self.enemies.add(enemy_sprite)
-                    self.add(enemy_sprite)  # Добавляем врага в общий список спрайтов
+                    self.add(enemy_sprite)
 
     def _scroll_x(self):
         player = self.player.sprite
@@ -135,34 +133,30 @@ class World:
                 player.life -= 1
 
     def update(self, player_event):
-        # Обновляем все группы спрайтов
+        # Update all groups of sprites
         self.tiles.update(self.world_shift)
         self.dirt.update(self.world_shift)
         self.traps.update(self.world_shift)
         self.goal.update(self.world_shift)
-        self.enemies.update()  # Обновляем врагов
+        self.enemies.update()
 
-        # Обновляем игрока
+        # Update the player
         self.player.update(player_event)
-        
-        # Обработка всех столкновений и гравитации
+
+        # Handle all collisions and gravity
         self._scroll_x()
         self._horizontal_movement_collision()
         self._vertical_movement_collision()
         self._handle_traps()
-        
-        # Отображение состояния игры
+
+        # Display game state
         self.game.show_life(self.player.sprite)
         self.game.game_state(self.player.sprite, self.goal.sprite)
-        
-        # Отрисовка всех групп спрайтов
+
+        # Draw all sprite groups
         self.tiles.draw(self.screen)
         self.dirt.draw(self.screen)
         self.traps.draw(self.screen)
         self.goal.draw(self.screen)
-        
-        # Отрисовка игрока
         self.player.draw(self.screen)
-
-        # Отрисовка врагов
         self.enemies.draw(self.screen)

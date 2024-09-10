@@ -77,5 +77,6 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x += self.direction.x * self.speed
         self._animate()
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
+    def draw(self, surface, offset):
+        """Draw enemy on screen with camera offset."""
+        surface.blit(self.image, (self.rect.x - offset.x, self.rect.y - offset.y))
