@@ -28,7 +28,7 @@ class Game:
         self.game_over_menu = None
 
     def show_game_over_menu(self):
-        self.game_over_menu = pygame_menu.Menu('Game Over', 400, 300, theme=pygame_menu.themes.THEME_BLUE)
+        self.game_over_menu = pygame_menu.Menu('Game Over', 700, 500, theme=pygame_menu.themes.THEME_BLUE)
         self.game_over_menu.add.button('Restart', self.restart_game)
         self.game_over_menu.add.button('Quit', pygame_menu.events.EXIT)
         self.game_over_menu.mainloop(self.screen)
