@@ -2,15 +2,17 @@ import pygame
 import pygame_menu
 from settings import HEIGHT, WIDTH
 
+pygame.init()
 pygame.font.init()
+
 
 class Game:
     def __init__(self, screen):
-        self.screen = screen
+        self.screen = pygame.display.set_mode((700, 500), pygame.RESIZABLE)
         self.font = pygame.font.SysFont("impact", 70)
         self.message_color = pygame.Color("darkorange")
         self.clock = pygame.time.Clock()
-        
+
         # Load life animation frames
         self.life_frames = [pygame.image.load(f"assets/life/{i}.png") for i in range(4)]
         self.life_size = 30
@@ -74,14 +76,15 @@ class Game:
             self.show_game_over_menu()
 
     def update(self):
-        # Update game state, handle collisions, etc.
         pass
 
     def draw(self):
-        # Draw all game elements
-        pass
+        print("Отрисовка элементов")  # Добавляем отладочный вывод
+        self.screen.fill((0, 0, 0))  # Заполняем экран черным
+        pygame.display.update()
 
     def main(self):
+        print("Запуск игрового цикла")
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -92,15 +95,11 @@ class Game:
                         self.restart_game()
 
             if not self.game_over:
+                print("Игра обновляется")
                 self.update()
                 self.draw()
 
             pygame.display.flip()
             self.clock.tick(60)
 
-# Example of how to create a Game instance and start it
-if __name__ == "__main__":
-    pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    game = Game(screen)
-    game.main()
+        pygame.quit()
